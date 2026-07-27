@@ -1,0 +1,334 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</header>
+<!-- Main Content Area -->
+<main class="mt-20 px-0" id="gallery-root">
+  <!-- Diisi dinamis oleh JS -->
+  <div id="loading" class="flex justify-center items-center py-20">
+    <span class="material-symbols-outlined text-primary animate-spin text-[40px]">progress_activity</span>
+  </div>
+</main>
+<!-- Lightbox -->
+<script src="lightbox.js?v=1784560715"></script>
+
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center pt-3 pb-6 px-md bg-surface/80 backdrop-blur-md z-50">
+<!-- Photos (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:opacity-80 active:scale-90 transition-all duration-150" href="index.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">photo_library</span>
+<span class="font-label-sm text-label-sm">Photos</span>
+</a>
+<!-- Library -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 active:scale-90 transition-all duration-150" href="library.html">
+<span class="material-symbols-outlined">book</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+</nav>
+<script>
+    const LABEL_TODAY = 'Hari ini';
+    const LABEL_YESTERDAY = 'Kemarin';
+
+    function formatLabel(ts) {
+      const d = new Date(ts * 1000);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today - 86400000);
+      const photoDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      if (photoDay.getTime() === today.getTime()) return LABEL_TODAY;
+      if (photoDay.getTime() === yesterday.getTime()) return LABEL_YESTERDAY;
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function buildGrid(photos) {
+      const groups = {};
+      photos.forEach(p => {
+        const label = formatLabel(p.date);
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(p);
+      });
+
+      const root = document.getElementById('gallery-root');
+      root.innerHTML = '';
+
+      if (photos.length === 0) {
+        root.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-on-surface-variant gap-md">
+          <span class="material-symbols-outlined text-[48px]">photo_library</span>
+          <p class="font-body-md text-body-md">Belum ada foto. Jalankan sync dulu.</p>
+        </div>`;
+        return;
+      }
+
+      Object.entries(groups).forEach(([label, items]) => {
+        const section = document.createElement('section');
+        section.className = 'mb-lg';
+        section.innerHTML = `
+          <div class="px-margin-mobile py-sm flex justify-between items-end">
+            <h2 class="font-title-md text-title-md text-on-surface">${label}</h2>
+          </div>
+          <div class="photo-grid">
+            ${items.map(p => `
+              <div class="aspect-square bg-surface-container overflow-hidden group relative cursor-pointer active:scale-95 transition-transform" data-id="${p.message_id}" data-full="${p.url}" data-date="${p.date}" data-channel="${p.channel_id||''}">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-duration-500"
+                  alt="${p.caption || 'Foto'}"
+                  src="${p.thumb_url}"
+                  loading="lazy"/>
+              </div>`).join('')}
+          </div>`;
+        root.appendChild(section);
+      });
+
+      // Klik → buka lightbox dengan navigasi
+      root.querySelectorAll('.photo-grid > div').forEach((item, idx) => {
+        item.addEventListener('click', function() {
+          // Kumpulkan semua foto yang sudah di-render
+          const allItems = [...root.querySelectorAll('.photo-grid > div[data-full]')];
+          const photoList = allItems.map(el => ({ url: el.dataset.full, thumb_url: el.querySelector('img')?.src, date: parseInt(el.dataset.date)||0, message_id: el.dataset.id, channel_id: el.dataset.channel }));
+          const clickedIdx = allItems.indexOf(this);
+          Lightbox.open(clickedIdx, photoList);
+        });
+      });
+    }
+
+    let currentPage = 1;
+    const PAGE_SIZE = 30;
+    let isLoading = false;
+    let totalPhotos = 0;
+
+    async function loadPhotos(page = 1) {
+      if (isLoading) return;
+      isLoading = true;
+      try {
+        const res = await fetch(`/api/photos?page=${page}&limit=${PAGE_SIZE}`);
+        if (!res.ok) throw new Error('API tidak tersedia');
+        const data = await res.json();
+        totalPhotos = data.total;
+        if (page === 1) {
+          buildGrid(data.photos);
+        } else {
+          appendPhotos(data.photos);
+        }
+      } catch (e) {
+        document.getElementById('gallery-root').innerHTML = `
+          <div class="flex flex-col items-center justify-center py-20 text-on-surface-variant gap-md">
+            <span class="material-symbols-outlined text-[48px]">cloud_off</span>
+            <p class="font-body-md text-body-md">Gagal memuat foto: ${e.message}</p>
+          </div>`;
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    function appendPhotos(photos) {
+      if (!photos.length) return;
+      const root = document.getElementById('gallery-root');
+      // Cari grid terakhir atau buat section baru
+      let lastGrid = root.querySelector('.photo-grid:last-of-type');
+      if (!lastGrid) { loadPhotos(1); return; }
+
+      photos.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'aspect-square bg-surface-container overflow-hidden group relative cursor-pointer active:scale-95 transition-transform';
+        div.dataset.full = p.url;
+        div.dataset.date = p.date;
+        div.dataset.id = p.message_id;
+        div.dataset.channel = p.channel_id || '';
+        div.innerHTML = `<img class="w-full h-full object-cover group-hover:scale-105 transition-duration-500"
+          alt="${p.caption || 'Foto'}" src="${p.thumb_url}" loading="lazy"/>`;
+        div.addEventListener('click', () => {
+          const allItems = [...document.querySelectorAll('.photo-grid > div[data-full]')];
+          const photoList = allItems.map(el => ({ url: el.dataset.full, date: parseInt(el.dataset.date)||0, message_id: el.dataset.id, channel_id: el.dataset.channel }));
+          Lightbox.open(allItems.indexOf(div), photoList);
+        });
+        lastGrid.appendChild(div);
+      });
+    }
+
+    // Header shadow on scroll
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('header');
+      if (window.scrollY > 10) {
+        header.classList.add('shadow-sm', 'bg-surface');
+        header.classList.remove('bg-surface/80');
+      } else {
+        header.classList.remove('shadow-sm', 'bg-surface');
+        header.classList.add('bg-surface/80');
+      }
+    });
+
+    loadPhotos(1);
+
+    // Infinite scroll — load halaman berikutnya saat mendekati bawah
+    window.addEventListener('scroll', () => {
+      if (isLoading) return;
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+        const loaded = currentPage * PAGE_SIZE;
+        if (loaded < totalPhotos) {
+          currentPage++;
+          loadPhotos(currentPage);
+        }
+      }
+    });
+
+    // Auto refresh cek foto baru setiap 30 detik
+    let lastTotal = 0;
+    setInterval(async () => {
+      try {
+        const res = await fetch('/api/photos?limit=1');
+        const data = await res.json();
+        if (lastTotal && data.total !== lastTotal) {
+          currentPage = 1;
+          loadPhotos(1);
+        }
+        lastTotal = data.total;
+      } catch {}
+    }, 30000);
+  </script>
+</body></html>

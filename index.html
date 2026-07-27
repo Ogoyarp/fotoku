@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<script src="/auth.js"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Photos - Gallery</title>
+<!-- Prefetch halaman lain agar transisi cepat -->
+<link rel="prefetch" href="library.html"/>
+<link rel="prefetch" href="profile.html"/>
+<script src="/tailwind.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#fffbff",
+                    "outline": "#717786",
+                    "outline-variant": "#c1c6d7",
+                    "on-surface-variant": "#414755",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "surface-variant": "#e4e2e4",
+                    "secondary-container": "#6664e4",
+                    "on-surface": "#1b1b1d",
+                    "secondary": "#4c4aca",
+                    "secondary-fixed": "#e2dfff",
+                    "primary-container": "#0070eb",
+                    "on-background": "#1b1b1d",
+                    "primary-fixed": "#d8e2ff",
+                    "inverse-surface": "#303032",
+                    "background": "#fcf8fb",
+                    "on-tertiary-fixed": "#351000",
+                    "on-primary-fixed": "#001a41",
+                    "primary": "#0058bc",
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#adc6ff",
+                    "surface-bright": "#fcf8fb",
+                    "surface": "#fcf8fb",
+                    "on-error-container": "#93000a",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#005bc1",
+                    "error-container": "#ffdad6",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-primary": "#adc6ff",
+                    "surface-container-low": "#f6f3f5",
+                    "tertiary-fixed": "#ffdbcc",
+                    "on-primary-container": "#fefcff",
+                    "on-tertiary-container": "#fffbff",
+                    "error": "#ba1a1a",
+                    "surface-dim": "#dcd9dc",
+                    "on-secondary-fixed": "#0c006a",
+                    "on-tertiary-fixed-variant": "#7c2e00",
+                    "on-primary-fixed-variant": "#004493",
+                    "on-secondary-fixed-variant": "#3631b4",
+                    "surface-container": "#f0edef",
+                    "tertiary-container": "#c64f00",
+                    "tertiary-fixed-dim": "#ffb595",
+                    "surface-container-high": "#eae7ea",
+                    "surface-container-highest": "#e4e2e4",
+                    "secondary-fixed-dim": "#c2c1ff",
+                    "tertiary": "#9e3d00",
+                    "inverse-on-surface": "#f3f0f2"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "xl": "32px",
+                    "sm": "8px",
+                    "unit": "4px",
+                    "gutter": "2px",
+                    "margin-desktop": "40px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "title-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        /* Custom scrollbar for gallery experience */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c1c6d7; border-radius: 10px; }
+        .glass-effect { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+        @media (min-width: 768px) { .photo-grid { grid-template-columns: repeat(6, 1fr); } }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md flex justify-between items-center px-margin-mobile py-sm w-full z-50">
+<div class="flex items-center gap-md w-full">
+<div class="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 active:scale-95 transition-transform duration-200">
+<img class="h-full w-full object-cover" alt="Profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGTH32tOY3BO_B344s_LMBTbr_X-QNksDGDcWQi5B-3Ml0PHRxH4-ApNvM8mn7PXT2TiUKDQAwZlyBv5NDj259fRJGsFQUdtnfgyFc7bTT6Ip-_elDYLQNbN6NICQ79v8OPbNwSIM5xKsP-KVh-mQVtaQQk136dF67gSYbmWZEW2bsf8C1wMQetG-cLwd3540M6qEOrg895QhyMeyWmRGzVT5r8E0HX6R6K8XSQ8AovKXZDGPsWB3w7eqw6lciwliVDJxCmr7rDgY"/>
+</div>
+<!-- Search Bar Integration -->
+<div class="flex-grow relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 bg-surface-container-high border-none rounded-xl font-body-md text-body-md focus:ring-2 focus:ring-primary/20 transition-all outline-none text-on-surface" placeholder="Search your photos" type="text"/>
+</div>
+<a href="profile.html" class="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface-variant">tune</span>
+</a>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="mt-20 px-0" id="gallery-root">
+  <!-- Diisi dinamis oleh JS -->
+  <div id="loading" class="flex justify-center items-center py-20">
+    <span class="material-symbols-outlined text-primary animate-spin text-[40px]">progress_activity</span>
+  </div>
+</main>
+<!-- Lightbox -->
+<script src="lightbox.js?v=1784560715"></script>
+
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center pt-3 pb-6 px-md bg-surface/80 backdrop-blur-md z-50">
+<!-- Photos (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:opacity-80 active:scale-90 transition-all duration-150" href="index.html">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">photo_library</span>
+<span class="font-label-sm text-label-sm">Photos</span>
+</a>
+<!-- Library -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 active:scale-90 transition-all duration-150" href="library.html">
+<span class="material-symbols-outlined">book</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+</nav>
+<script>
+    const LABEL_TODAY = 'Hari ini';
+    const LABEL_YESTERDAY = 'Kemarin';
+
+    function formatLabel(ts) {
+      const d = new Date(ts * 1000);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today - 86400000);
+      const photoDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      if (photoDay.getTime() === today.getTime()) return LABEL_TODAY;
+      if (photoDay.getTime() === yesterday.getTime()) return LABEL_YESTERDAY;
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function buildGrid(photos) {
+      const groups = {};
+      photos.forEach(p => {
+        const label = formatLabel(p.date);
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(p);
+      });
+
+      const root = document.getElementById('gallery-root');
+      root.innerHTML = '';
+
+      if (photos.length === 0) {
+        root.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-on-surface-variant gap-md">
+          <span class="material-symbols-outlined text-[48px]">photo_library</span>
+          <p class="font-body-md text-body-md">Belum ada foto. Jalankan sync dulu.</p>
+        </div>`;
+        return;
+      }
+
+      Object.entries(groups).forEach(([label, items]) => {
+        const section = document.createElement('section');
+        section.className = 'mb-lg';
+        section.innerHTML = `
+          <div class="px-margin-mobile py-sm flex justify-between items-end">
+            <h2 class="font-title-md text-title-md text-on-surface">${label}</h2>
+          </div>
+          <div class="photo-grid">
+            ${items.map(p => `
+              <div class="aspect-square bg-surface-container overflow-hidden group relative cursor-pointer active:scale-95 transition-transform" data-id="${p.message_id}" data-full="${p.url}" data-date="${p.date}" data-channel="${p.channel_id||''}">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-duration-500"
+                  alt="${p.caption || 'Foto'}"
+                  src="${p.thumb_url}"
+                  loading="lazy"/>
+              </div>`).join('')}
+          </div>`;
+        root.appendChild(section);
+      });
+
+      // Klik → buka lightbox dengan navigasi
+      root.querySelectorAll('.photo-grid > div').forEach((item, idx) => {
+        item.addEventListener('click', function() {
+          // Kumpulkan semua foto yang sudah di-render
+          const allItems = [...root.querySelectorAll('.photo-grid > div[data-full]')];
+          const photoList = allItems.map(el => ({ url: el.dataset.full, thumb_url: el.querySelector('img')?.src, date: parseInt(el.dataset.date)||0, message_id: el.dataset.id, channel_id: el.dataset.channel }));
+          const clickedIdx = allItems.indexOf(this);
+          Lightbox.open(clickedIdx, photoList);
+        });
+      });
+    }
+
+    let currentPage = 1;
+    const PAGE_SIZE = 30;
+    let isLoading = false;
+    let totalPhotos = 0;
+
+    async function loadPhotos(page = 1) {
+      if (isLoading) return;
+      isLoading = true;
+      try {
+        const res = await fetch(`/api/photos?page=${page}&limit=${PAGE_SIZE}`);
+        if (!res.ok) throw new Error('API tidak tersedia');
+        const data = await res.json();
+        totalPhotos = data.total;
+        if (page === 1) {
+          buildGrid(data.photos);
+        } else {
+          appendPhotos(data.photos);
+        }
+      } catch (e) {
+        document.getElementById('gallery-root').innerHTML = `
+          <div class="flex flex-col items-center justify-center py-20 text-on-surface-variant gap-md">
+            <span class="material-symbols-outlined text-[48px]">cloud_off</span>
+            <p class="font-body-md text-body-md">Gagal memuat foto: ${e.message}</p>
+          </div>`;
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    function appendPhotos(photos) {
+      if (!photos.length) return;
+      const root = document.getElementById('gallery-root');
+      // Cari grid terakhir atau buat section baru
+      let lastGrid = root.querySelector('.photo-grid:last-of-type');
+      if (!lastGrid) { loadPhotos(1); return; }
+
+      photos.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'aspect-square bg-surface-container overflow-hidden group relative cursor-pointer active:scale-95 transition-transform';
+        div.dataset.full = p.url;
+        div.dataset.date = p.date;
+        div.dataset.id = p.message_id;
+        div.dataset.channel = p.channel_id || '';
+        div.innerHTML = `<img class="w-full h-full object-cover group-hover:scale-105 transition-duration-500"
+          alt="${p.caption || 'Foto'}" src="${p.thumb_url}" loading="lazy"/>`;
+        div.addEventListener('click', () => {
+          const allItems = [...document.querySelectorAll('.photo-grid > div[data-full]')];
+          const photoList = allItems.map(el => ({ url: el.dataset.full, date: parseInt(el.dataset.date)||0, message_id: el.dataset.id, channel_id: el.dataset.channel }));
+          Lightbox.open(allItems.indexOf(div), photoList);
+        });
+        lastGrid.appendChild(div);
+      });
+    }
+
+    // Header shadow on scroll
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('header');
+      if (window.scrollY > 10) {
+        header.classList.add('shadow-sm', 'bg-surface');
+        header.classList.remove('bg-surface/80');
+      } else {
+        header.classList.remove('shadow-sm', 'bg-surface');
+        header.classList.add('bg-surface/80');
+      }
+    });
+
+    loadPhotos(1);
+
+    // Infinite scroll — load halaman berikutnya saat mendekati bawah
+    window.addEventListener('scroll', () => {
+      if (isLoading) return;
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+        const loaded = currentPage * PAGE_SIZE;
+        if (loaded < totalPhotos) {
+          currentPage++;
+          loadPhotos(currentPage);
+        }
+      }
+    });
+
+    // Auto refresh cek foto baru setiap 30 detik
+    let lastTotal = 0;
+    setInterval(async () => {
+      try {
+        const res = await fetch('/api/photos?limit=1');
+        const data = await res.json();
+        if (lastTotal && data.total !== lastTotal) {
+          currentPage = 1;
+          loadPhotos(1);
+        }
+        lastTotal = data.total;
+      } catch {}
+    }, 30000);
+  </script>
+</body></html>

@@ -1,0 +1,10 @@
+node_modules/
+.env
+session.txt
+photos.json
+chat_ids.json
+fotoku.json
+thumbs/
+*.log
+.aider*
+package-lock.json
