@@ -13,6 +13,67 @@ const { StringSession } = require('teleproto/sessions');
 const app = express();
 app.use(express.json());
 
+// ── Auth server-side ─────────────────────────────────────────────────────────
+// ponytail: session in-memory (Map) — restart server = semua logout.
+// Upgrade ke file/DB kalau butuh persist antar restart.
+const crypto = require('crypto');
+const AUTH_EMAIL = process.env.AUTH_EMAIL;
+const AUTH_PASSWORD = process.env.AUTH_PASSWORD;
+const sessions = new Map(); // token -> expiry (ms)
+const SESSION_MAX_AGE = 30 * 24 * 3600 * 1000; // 30 hari
+
+function parseCookies(req) {
+  const h = req.headers.cookie || '';
+  const out = {};
+  h.split(';').forEach(pair => {
+    const idx = pair.indexOf('=');
+    if (idx > 0) out[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+  });
+  return out;
+}
+
+function safeEq(a, b) {
+  const ba = Buffer.from(String(a || ''));
+  const bb = Buffer.from(String(b || ''));
+  return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
+}
+
+function sessionFrom(req) {
+  const token = parseCookies(req)['fotoku_session'];
+  const exp = token && sessions.get(token);
+  return (exp && exp > Date.now()) ? token : null;
+}
+
+app.post('/api/login', (req, res) => {
+  if (!AUTH_EMAIL || !AUTH_PASSWORD) {
+    return res.status(500).json({ error: 'Auth belum dikonfigurasi. Isi AUTH_EMAIL dan AUTH_PASSWORD di .env' });
+  }
+  const { email, password } = req.body || {};
+  if (!safeEq(email, AUTH_EMAIL) || !safeEq(password, AUTH_PASSWORD)) {
+    return res.status(401).json({ error: 'Email atau password salah.' });
+  }
+  const token = crypto.randomBytes(32).toString('hex');
+  sessions.set(token, Date.now() + SESSION_MAX_AGE);
+  res.setHeader('Set-Cookie',
+    `fotoku_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MAX_AGE / 1000}`);
+  res.json({ ok: true });
+});
+
+app.post('/api/logout', (req, res) => {
+  const token = parseCookies(req)['fotoku_session'];
+  if (token) sessions.delete(token);
+  res.setHeader('Set-Cookie', 'fotoku_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+  res.json({ ok: true });
+});
+
+app.get('/api/me', (req, res) => res.json({ authenticated: !!sessionFrom(req) }));
+
+// Semua /api/* lainnya wajib login (login/logout/me dikecualikan di atas)
+app.use('/api', (req, res, next) => {
+  if (sessionFrom(req)) return next();
+  res.status(401).json({ error: 'Unauthorized' });
+});
+
 const DB_FILE      = path.join(__dirname, 'photos.json');
 const CHAT_IDS_FILE = path.join(__dirname, 'chat_ids.json');
 const SESSION_FILE  = path.join(__dirname, 'session.txt');
@@ -385,5 +446,5 @@ app.use(express.static(path.join(__dirname), {
 
 app.listen(PORT, () => {
   console.log(`Server berjalan di http://localhost:${PORT}`);
-  console.log(`Webhook: https://sapaklien.my.id/webhook/${BOT_TOKEN}`);
+  console.log('Webhook: terdaftar (URL tersembunyi dari log, cek config Telegram langsung)');
 });

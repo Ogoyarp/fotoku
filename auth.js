@@ -1,11 +1,13 @@
 // auth.js — Client-side authentication helper for Fotoku
+// Status auth ditentukan server via /api/me (cookie HttpOnly fotoku_session).
 (function () {
-  const token = localStorage.getItem('fotoku_token');
+  let authenticated = false;
   const path = window.location.pathname;
   const isProfilePage = path.endsWith('profile.html');
 
   // Inject CSS blur styles immediately if not logged in
-  if (!token) {
+  function applyBlur() {
+    if (authenticated || document.getElementById('auth-blur-styles')) return;
     const style = document.createElement('style');
     style.id = 'auth-blur-styles';
     style.innerHTML = `
@@ -31,17 +33,26 @@
     document.head.appendChild(style);
   }
 
+  function removeBlur() {
+    const style = document.getElementById('auth-blur-styles');
+    if (style) style.remove();
+  }
+
   // Handle onload behavior
-  window.addEventListener('DOMContentLoaded', () => {
-    const btnAuth = document.getElementById('btn-auth') || document.querySelector('button.mt-lg'); // find sign-out button
-    
+  window.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch('/api/me');
+      authenticated = (await res.json()).authenticated === true;
+    } catch { authenticated = false; }
+    applyBlur();
+
+    const btnAuth = document.getElementById('btn-auth') || document.querySelector('button.mt-lg');
     if (isProfilePage && btnAuth) {
-      btnAuth.id = 'btn-auth'; // ensure it has the correct ID
-      if (!token) {
+      btnAuth.id = 'btn-auth';
+      if (!authenticated) {
         btnAuth.textContent = 'Sign In';
         btnAuth.classList.remove('border-error/20', 'text-error', 'hover:bg-error-container/10');
         btnAuth.classList.add('border-primary/20', 'text-primary', 'hover:bg-primary/10');
-        
         btnAuth.addEventListener('click', (e) => {
           e.preventDefault();
           showLoginModal();
@@ -75,7 +86,7 @@
             <p class="font-body-md text-body-md text-on-surface-variant mt-xs">Silakan login untuk mengakses media.</p>
           </div>
           <div class="flex flex-col gap-sm">
-            <input id="login-email" type="email" placeholder="Email" class="w-full px-md py-sm bg-surface-container-high rounded-xl font-body-md text-body-md text-on-surface outline-none focus:ring-2 focus:ring-primary/30 border-none" value="adiprayogo47@gamil.com"/>
+            <input id="login-email" type="email" placeholder="Email" class="w-full px-md py-sm bg-surface-container-high rounded-xl font-body-md text-body-md text-on-surface outline-none focus:ring-2 focus:ring-primary/30 border-none"/>
             <input id="login-password" type="password" placeholder="Password" class="w-full px-md py-sm bg-surface-container-high rounded-xl font-body-md text-body-md text-on-surface outline-none focus:ring-2 focus:ring-primary/30 border-none"/>
           </div>
           <p id="login-error" class="hidden font-label-sm text-label-sm text-error px-xs text-center"></p>
@@ -91,7 +102,7 @@
       });
 
       document.getElementById('btn-login-submit').addEventListener('click', submitLogin);
-      
+
       // Submit on enter
       const inputs = [document.getElementById('login-email'), document.getElementById('login-password')];
       inputs.forEach(input => {
@@ -124,10 +135,7 @@
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        localStorage.setItem('fotoku_token', data.token);
-        // Set client-side cookie too as fallback
-        document.cookie = "fotoku_token=" + data.token + "; path=/; max-age=31536000";
-        // Reload page to apply changes
+        // Session tersimpan di cookie HttpOnly oleh server — tidak ada token di JS
         window.location.reload();
       } else {
         errorEl.textContent = data.error || 'Login gagal.';
@@ -143,8 +151,6 @@
     try {
       await fetch('/api/logout', { method: 'POST' });
     } catch {}
-    localStorage.removeItem('fotoku_token');
-    document.cookie = "fotoku_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     window.location.reload();
   }
 })();
